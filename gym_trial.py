@@ -38,7 +38,3 @@ class MyAgent:
                 agent.env.reset()
 agent = MyAgent()
 agent.run()
-
-
-    
-
