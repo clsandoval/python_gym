@@ -7,6 +7,7 @@ class candidate:
         self.env = gym.make('CartPole-v0')
         self.weights = weight
         self.observation = self.env.reset()
+        self.generations = 0
     def action(self,state):
         a = np.dot(state,self.weights)
         return np.argmax(a)
@@ -17,6 +18,7 @@ class candidate:
             self.observation, reward, done, info = self.env.step(self.action(self.observation))
             r += reward
         self.env.reset()
+        self.generations += 1
         return r
 class population:
     def __init__(self):
@@ -27,8 +29,8 @@ class population:
         child_weights = np.random.rand(4,2)
         for i in range(len(parents)):
             for j in range(len(parents)):
-                child_weights[:1][:1] = parents[i].weights[:1][:1]
-                child_weights[1:][1:] = parents[j].weights[1:][1:]
+                child_weights[:2][:1] = parents[i].weights[:2][:1]
+                child_weights[2:][1:] = parents[j].weights[2:][1:]
                 child = candidate(child_weights)
                 if len(self.population)> 50:
                     self.population = self.population[1:]
@@ -60,6 +62,8 @@ for i in range(100):
     print(r)
     mean += r
 print(f"Mean: {mean/100}")
+for i in p.population:
+    print(f"generations: {i.generations}")
 while True:
     agent.env.render()
     agent.observation, reward, done, info = agent.env.step(agent.action(agent.observation))
