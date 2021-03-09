@@ -17,7 +17,6 @@ class DQN:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
-        self.tau = 0.05
         self.model = self.create_model()
         self.target_model =  self.create_model()
     def create_model(self):  
@@ -45,6 +44,7 @@ class DQN:
             else:
                 Q_future = max(self.target_model.predict(new_state)[0])
                 target[0][action] = reward + Q_future * self.gamma
+            
             self.model.fit(state,target,epochs=1,verbose=0)
     def target_train(self):
         weights = self.model.get_weights()
