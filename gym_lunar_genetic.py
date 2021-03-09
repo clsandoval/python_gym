@@ -37,9 +37,9 @@ class population:
                     self.mutate(child)
                 self.population.append(child)
 p = population()
-for i in range(50):
+for i in range(2000):
     worths = np.array([i.worth() for i in p.population])
-    print(worths)
+    if i %100 == 0: print(worths.sum(0)/ len(worths))
     max_2 = np.argpartition(worths,-6)[-6:]
     parents = []
     for i in max_2:
