@@ -2,11 +2,18 @@ from collections import deque
 import gym 
 import random
 from keras.models import Sequential, load_model
+from keras.callbacks import TensorBoard
 from keras.layers import Dense,Dropout
 from keras.optimizers import Adam
 import numpy as np 
 
 load = True
+
+tensorboard = TensorBoard(
+    log_dir='logs', histogram_freq=0, write_graph=True,
+    write_images=True, update_freq='epoch', profile_batch=0,
+    embeddings_freq=0, embeddings_metadata=None
+)
 
 class DQN:
     def __init__(self,env):
@@ -17,8 +24,8 @@ class DQN:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
-        self.model = self.create_model()
-        self.target_model =  self.create_model()
+        self.model = load_model('ckpt')
+        self.target_model =  load_model('ckpt')
     def create_model(self):  
         model = Sequential()
         state_shape = self.env.observation_space.shape
@@ -45,7 +52,7 @@ class DQN:
                 Q_future = max(self.target_model.predict(new_state)[0])
                 target[0][action] = reward + Q_future * self.gamma
             
-            self.model.fit(state,target,epochs=1,verbose=0)
+        self.model.fit(state,target,epochs=1,verbose=0, callbacks=[tensorboard])
     def target_train(self):
         weights = self.model.get_weights()
         target_weights = self.target_model.get_weights()

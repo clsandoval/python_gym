@@ -57,7 +57,7 @@ class my_model(nn.Module):
         self.bn3 = nn.BatchNorm2d(32)
         def conv2_size(size, kernel_size = 5, stride  = 2):
             return ( size - (kernel_size - 1)-1)//stride + 1
-        def shortcut()
+       
         conv_w = conv2_size(conv2_size(conv2_size(w)))
         conv_h = conv2_size(conv2_size(conv2_size(h)))
         self.last = nn.Linear(conv_h * conv_w * 32, 10)
