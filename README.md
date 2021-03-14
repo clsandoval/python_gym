@@ -1,5 +1,5 @@
 # python_gym
-## just implementing things in my class/ I read about
+## just implementing things I read about
 ### current list:
 * genetic and hill-climbing algorithms for OpenAi's gym environment
 * DQN implemented in both keras and torch 
