@@ -11,43 +11,44 @@ from matplotlib import pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import sampler
 import numpy as np
-#mnist exercise
+#cifar10 exercise
 
 N,C,W,H =  32, 3, 32, 32
 transform = T.Compose([
     T.ToTensor(),
 ])
-mnist_data = dset.CIFAR10(
+cifar_10 = dset.CIFAR10(
     '/datasets',
     train = True,
     download = True,
     transform = transform
 )
-mnist_data_test = dset.CIFAR10(
+cifar_10_test = dset.CIFAR10(
     '/datasets',
     train = False,
     download = True,
     transform = transform
 )
 loader_train = DataLoader(
-    mnist_data,
+    cifar_10,
     batch_size = 32,
     sampler=sampler.SubsetRandomSampler(range(49000)),
     drop_last =True
 )
 loader_val = DataLoader(
-    mnist_data,
+    cifar_10,
     batch_size = 32,
     sampler=sampler.SubsetRandomSampler(range(49000,50000)),
     drop_last =True
 )
 loader_test = DataLoader(
-    mnist_data_test,
+    cifar_10_test,
     batch_size = 32,
     drop_last =True
 )
+
 class my_model(nn.Module):
-    def __init__(self,h,w,outputs):
+    def __init__(self,w,h,outputs):
         super(my_model,self).__init__()
         self.conv1 = nn.Conv2d(3,16,kernel_size = 5, stride = 2)
         self.bn1 = nn.BatchNorm2d(16)
@@ -57,7 +58,6 @@ class my_model(nn.Module):
         self.bn3 = nn.BatchNorm2d(32)
         def conv2_size(size, kernel_size = 5, stride  = 2):
             return ( size - (kernel_size - 1)-1)//stride + 1
-       
         conv_w = conv2_size(conv2_size(conv2_size(w)))
         conv_h = conv2_size(conv2_size(conv2_size(h)))
         self.last = nn.Linear(conv_h * conv_w * 32, 10)

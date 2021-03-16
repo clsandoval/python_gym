@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from torch.utils.tensorboard import SummaryWriter
-
 from collections import namedtuple, deque
 from itertools import count
 from PIL import Image
@@ -22,7 +21,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class DQN:
     def __init__(self,env):
         self.env = env
-        self.memory = deque(maxlen=10000)
+        self.memory = deque(maxlen=5000)
         self.gamma = 0.85
         self.epsilon = 1
         self.epsilon_min = 0.01
@@ -33,13 +32,11 @@ class DQN:
         self.target_model.load_state_dict(self.model.state_dict())
     def create_model(self):
         model = nn.Sequential(
-            nn.Linear(self.env.observation_space.shape[0],32),
+            nn.Linear(self.env.observation_space.shape[0],8),
             nn.ReLU(),
-            nn.Linear(32,64),
+            nn.Linear(8,4),
             nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, self.env.action_space.n),
+            nn.Linear(4, self.env.action_space.n),
         )
         return model.double()
     def action(self,state):
@@ -51,7 +48,7 @@ class DQN:
     def remember(self,state,action,reward,new_state,done):
         self.memory.append([state,action,reward,new_state,done])
     def replay(self, epoch):
-        batch_size = 64
+        batch_size = 512
         if len(self.memory) < batch_size:
             return
         #sample batch size
@@ -68,10 +65,10 @@ class DQN:
                 q_future = max(self.target_model(torch.tensor(new_state.reshape(1,4)))).detach()
                 target[0][action] = reward + q_future[0]*self.gamma
             #compute loss (predicted values, target)
-            #print(torch.tensor(state.reshape(1,4)).size(), target.unsqueeze(1).size())
             predicted_vals = self.model(torch.tensor(state.reshape(1,4)))
             l = nn.MSELoss(reduction =  'mean')
             loss = l(predicted_vals,target)
+            loss = torch.clamp(loss,-1,1)
             if (epoch % 5 == 0):
                 writer.add_scalar('Loss/Epoch', loss, epoch)
             optimizer = optim.Adam(self.model.parameters(), lr = 0.001)
@@ -80,13 +77,11 @@ class DQN:
             for param in self.model.parameters():
                 param.grad.data.clamp_(-1,1)
             optimizer.step()
-
     def train_target_model(self):
         self.target_model.load_state_dict(self.model.state_dict())
 
-writer = SummaryWriter("runs/5_mse_mean_10k_2")
+writer = SummaryWriter("runs/5_mse_batch_512")
 env = gym.make("CartPole-v0")
-update_target = 5
 agent = DQN(env)
 for e in range(10000):
     cur_state =  env.reset()
@@ -100,9 +95,10 @@ for e in range(10000):
         r += reward
         if done:
             break
-    if e % update_target:
         agent.train_target_model()
-    print(f"Reward:{r} Episode: {e}") 
+    print(f"Reward:{r} Episode: {e}", end = '\r') 
+    writer.add_scalar('Reward/Episode', r, e)
 writer.flush()
 writer.close()
+
 
