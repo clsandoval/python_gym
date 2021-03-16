@@ -51,7 +51,7 @@ class DQN:
     """
     experience replay
     """
-        batch_size = 32
+        batch_size = 64
         if len(self.memory) < batch_size:
             return
         samples = random.sample(self.memory,batch_size)
@@ -70,8 +70,7 @@ class DQN:
                 """
                 Q'(s',a') = max of target_model (next state)  * discount + reward
                 """
-                Q_future = max(self.target_model.predict(new_state)[0])
-                target[0][action] = reward + Q_future * self.gamma
+                target[0][action] = reward + max(self.target_model.predict(new_state)[0]) * self.gamma
         """
         loss/backward step both incorporated in .fit()
         """
@@ -82,12 +81,10 @@ class DQN:
     """
     epsilon-greedy
     """
-        self.epsilon *= self.epsilon_decay
-        self.epsilon = max(self.epsilon_min,self.epsilon)
+        self.epsilon = max(self.epsilon_min,self.epsilon * self.epsilon_decay)
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
-        z = np.argmax(self.model.predict(state)[0])
-        return z
+        return  np.argmax(self.model.predict(state)[0])
 env = gym.make("CartPole-v0")
 gamma = 0.9
 epsilon = 0.95
