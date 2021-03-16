@@ -1,8 +1,10 @@
 import random
 import gym
 import numpy as np
+#classic hill climb algorithm, not very effective
 class MyAgent:
     def __init__(self):
+    #initialize to random weights w/ noise
         self.env = gym.make('CartPole-v0')
         self.state_space = self.env.observation_space.shape
         self.action_size = self.env.action_space
@@ -15,6 +17,7 @@ class MyAgent:
         action = np.argmax(p)
         return self.action_size.sample()
     def update(self,reward):
+    #go in direction of better reward
         if reward >= self.best:
             self.best = reward
             self.best_weights = np.copy(self.weights) 
@@ -22,8 +25,8 @@ class MyAgent:
         else:
             self.noise_scale *= 2
         self.weights = self.best_weights + self.noise_scale * np.random.rand(4, 2)
-
     def run(self):
+    #main loop achieves ~70 average in 1000 steps
         agent = MyAgent()
         observation = agent.env.reset()
         rewards = 0

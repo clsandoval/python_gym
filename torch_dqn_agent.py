@@ -15,11 +15,17 @@ from torch.utils.tensorboard import SummaryWriter
 from collections import namedtuple, deque
 from itertools import count
 from PIL import Image
-
+"""
+Framework described in https://deepmind.com/research/publications/human-level-control-through-deep-reinforcement-learning
+Implemented in torch, convergence in 600 steps, still have to solve the "catastrophic forgetting" I run into
+"""
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class DQN:
     def __init__(self,env):
+    """
+    Sets the environment and other hyperparameters
+    """
         self.env = env
         self.memory = deque(maxlen=5000)
         self.gamma = 0.85
@@ -31,6 +37,9 @@ class DQN:
         self.target_model =  self.create_model()
         self.target_model.load_state_dict(self.model.state_dict())
     def create_model(self):
+    """
+    torch.nn.Sequential is used for the built-in forward/backward pass
+    """
         model = nn.Sequential(
             nn.Linear(self.env.observation_space.shape[0],8),
             nn.ReLU(),
@@ -40,37 +49,62 @@ class DQN:
         )
         return model.double()
     def action(self,state):
+    """
+    epsilon-greedy policy
+    """
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
         if np.random.random() < self.epsilon:
             return torch.tensor([random.randrange(2)])
         act = torch.argmax(self.model(torch.tensor(state)))
         return act
     def remember(self,state,action,reward,new_state,done):
+    """
+    append memory to deque
+    """
         self.memory.append([state,action,reward,new_state,done])
     def replay(self, epoch):
+    """
+    experience replay
+    """
         batch_size = 512
         if len(self.memory) < batch_size:
             return
-        #sample batch size
+        """
+        sample batch size
+        """
         samples =  random.sample(self.memory,batch_size)
         for sample in samples:
             state, action, reward, new_state, done = sample
-            #target values
+            """
+            target values
+            """
             target = self.target_model(torch.tensor(state.reshape(1,4)))
             if done== True:
-                #if state is done no future
+                """
+                if state is done no future
+                """
                 target[0][action] = reward
             else:
-                #q = max of target_model (next state)  * discount + reward
+                """
+                Q'(s',a') = max of target_model (next state)  * discount + reward
+                """
                 q_future = max(self.target_model(torch.tensor(new_state.reshape(1,4)))).detach()
                 target[0][action] = reward + q_future[0]*self.gamma
-            #compute loss (predicted values, target)
+            """
+            compute loss (predicted values, target)
+            """
             predicted_vals = self.model(torch.tensor(state.reshape(1,4)))
             l = nn.MSELoss(reduction =  'mean')
             loss = l(predicted_vals,target)
             loss = torch.clamp(loss,-1,1)
+            """
+            track on tensorboard
+            """
             if (epoch % 5 == 0):
                 writer.add_scalar('Loss/Epoch', loss, epoch)
+            """
+            backward pass
+            """
             optimizer = optim.Adam(self.model.parameters(), lr = 0.001)
             optimizer.zero_grad()
             loss.backward()
@@ -78,11 +112,18 @@ class DQN:
                 param.grad.data.clamp_(-1,1)
             optimizer.step()
     def train_target_model(self):
+    """
+    copy weights
+    """
         self.target_model.load_state_dict(self.model.state_dict())
 
 writer = SummaryWriter("runs/5_mse_batch_512")
 env = gym.make("CartPole-v0")
 agent = DQN(env)
+"""
+Main training loop, takes too long, implement DDQN for better performance
+~120 average in 600 steps, after 1000 steps goes back down to ~9 average.
+"""
 for e in range(10000):
     cur_state =  env.reset()
     r = 0

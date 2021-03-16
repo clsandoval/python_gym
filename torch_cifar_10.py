@@ -11,8 +11,10 @@ from matplotlib import pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data import sampler
 import numpy as np
-#cifar10 exercise
+#Cifar 10 exercise
 
+
+#Load datasets
 N,C,W,H =  32, 3, 32, 32
 transform = T.Compose([
     T.ToTensor(),
@@ -47,19 +49,24 @@ loader_test = DataLoader(
     drop_last =True
 )
 
+
 class my_model(nn.Module):
     def __init__(self,w,h,outputs):
         super(my_model,self).__init__()
+    #3 Convolutional Layers, BatchNorm, RelU activation
+    #TO DO: Downsample with 1x1 Conv layer for ResNet architecture 
         self.conv1 = nn.Conv2d(3,16,kernel_size = 5, stride = 2)
         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(16,32,kernel_size = 5, stride = 2)
         self.bn2 = nn.BatchNorm2d(32)
         self.conv3 = nn.Conv2d(32,32,kernel_size = 5, stride = 2)
         self.bn3 = nn.BatchNorm2d(32)
+        #out_size given by (size-k-2)/ + 1
         def conv2_size(size, kernel_size = 5, stride  = 2):
             return ( size - (kernel_size - 1)-1)//stride + 1
         conv_w = conv2_size(conv2_size(conv2_size(w)))
         conv_h = conv2_size(conv2_size(conv2_size(h)))
+        #out_size is # of features
         self.last = nn.Linear(conv_h * conv_w * 32, 10)
     def forward(self,x):
         x = F.relu(self.bn1(self.conv1(x)))
@@ -68,6 +75,7 @@ class my_model(nn.Module):
         return self.last(x.view(x.size()[0],-1))
 
 def check(agent, loader):
+#runs model in eval mode to predict values and check with validation set
     agent.eval()
     num_cor = 0
     num_samples = 0
@@ -85,6 +93,7 @@ def check(agent, loader):
     return
 
 agent = my_model(32,32,10)
+#main training loop, e is epochs
 for e in range(6):
     for step, (x,y) in enumerate(loader_train):
         y_preds =  agent(x)

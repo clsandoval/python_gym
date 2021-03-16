@@ -6,17 +6,20 @@ from keras.callbacks import TensorBoard
 from keras.layers import Dense,Dropout
 from keras.optimizers import Adam
 import numpy as np 
-
-load = True
-
+"""
+Framework described in https://deepmind.com/research/publications/human-level-control-through-deep-reinforcement-learning
+for some reason, runs better than torch version, albeit around 20-30x slower, coverges properly.
+"""
 tensorboard = TensorBoard(
     log_dir='logs', histogram_freq=0, write_graph=True,
     write_images=True, update_freq='epoch', profile_batch=0,
     embeddings_freq=0, embeddings_metadata=None
 )
-
 class DQN:
     def __init__(self,env):
+    """
+    Sets the environment and other hyperparameters
+    """
         self.env = env
         self.memory = deque(maxlen=2000)
         self.gamma = 0.85
@@ -24,42 +27,61 @@ class DQN:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.learning_rate = 0.001
-        self.model = load_model('ckpt')
-        self.target_model =  load_model('ckpt')
+        self.model = self.create_model()
+        self.target_model =  self.create_model()
     def create_model(self):  
+    """
+    keras.models.sequential is used for architecture, lower dimensions is better for CartPole
+    """
         model = Sequential()
         state_shape = self.env.observation_space.shape
-        model.add(Dense(24,input_dim=state_shape[0],activation = 'relu'))    
-        model.add(Dense(48,activation = 'relu'))    
+        model.add(Dense(12,input_dim=state_shape[0],activation = 'relu'))    
         model.add(Dense(24,activation = 'relu'))    
+        model.add(Dense(12,activation = 'relu'))    
         model.add(Dense(self.env.action_space.n))
         model.compile(loss = "mse", optimizer = Adam(lr = self.learning_rate))
         model.summary()
         return model    
     def remember(self,state,action,reward,new_state,done):
+    """
+    append memory to deque
+    """
         self.memory.append([state,action,reward,new_state,done])
     def replay(self):
+    """
+    experience replay
+    """
         batch_size = 32
         if len(self.memory) < batch_size:
             return
         samples = random.sample(self.memory,batch_size)
         for sample in samples:
             state, action, reward, new_state, done = sample
+            """
+            target values
+            """
             target = self.target_model.predict(state)
             if done:
+                """
+                done states have no future
+                """
                 target[0][action] = reward
             else:
+                """
+                Q'(s',a') = max of target_model (next state)  * discount + reward
+                """
                 Q_future = max(self.target_model.predict(new_state)[0])
                 target[0][action] = reward + Q_future * self.gamma
-            
+        """
+        loss/backward step both incorporated in .fit()
+        """
         self.model.fit(state,target,epochs=1,verbose=0, callbacks=[tensorboard])
     def target_train(self):
-        weights = self.model.get_weights()
-        target_weights = self.target_model.get_weights()
-        for i in range(len(target_weights)):
-            target_weights[i] = weights[i]
-        self.target_model.set_weights(target_weights)
+        self.target_model.set_weights( self.model.get_weights())
     def act(self, state):
+    """
+    epsilon-greedy
+    """
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min,self.epsilon)
         if np.random.random() < self.epsilon:

@@ -6,6 +6,11 @@
 ### to do:
 * DDQN
 * connect 4 alpha-beta pruning
+### to run:
+```
+pip --install requirements.txt
+```
 ### references:
 * https://deepmind.com/research/publications/human-level-control-through-deep-reinforcement-learning
 * https://arxiv.org/abs/1509.06461
+
