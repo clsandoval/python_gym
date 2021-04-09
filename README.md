@@ -9,7 +9,7 @@ pip --install requirements.txt
 ### Soon:
 * DDQN
 * connect 4 alpha-beta pruning
-#### references:
+#### References:
 * https://deepmind.com/research/publications/human-level-control-through-deep-reinforcement-learning
 * https://arxiv.org/abs/1509.06461
 
